@@ -1,6 +1,11 @@
 # Colvars Dashboard -- based on the Colvars Module for VMD
 # Jérôme Hénin <henin@ibpc.fr> 2018
 
+# Usage:
+# package require cv_dashboard
+# (or load cv_dashboard.tcl)
+# cv_dashboard
+
 # Design principles:
 # - take advantage of colvars/VMD binding for maximum user interaction
 # - hide the colvars config text from user, instead expose colvar, names and values
@@ -14,6 +19,9 @@
 # - histograms
 # - graphical representations such as rotation_display
 # - show atom groups as representations
+
+package provide cv_dashboard 1.0
+
 
 namespace eval ::cv_dashboard {
   # General UI state
@@ -37,11 +45,19 @@ namespace eval ::cv_dashboard {
 #################################################################
 
 
+proc cv_dashboard {} {
+  # If window already exists, destroy it
+  catch { destroy .cv_dashboard_window }
+  ::cv_dashboard::createWindow
+}
+
+
 # Creat main window
 proc ::cv_dashboard::createWindow {} {
 
   package require tablelist
   set w [toplevel .cv_dashboard_window]
+
 
   wm title $w "Colvars dashboard"
   wm protocol $w WM_DELETE_WINDOW {
@@ -58,11 +74,11 @@ proc ::cv_dashboard::createWindow {} {
   }
   set gridrow 0
   grid [ttk::button $w.load -text "Load config file" -command ::cv_dashboard::load -padding "2 0 2 0"] \
-    -row $gridrow -column 0 -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 0 -pady 2 -padx 2 -sticky nsew
   grid [ttk::button $w.save -text "Save colvars config" -command ::cv_dashboard::save -padding "2 0 2 0"] \
-    -row $gridrow -column 1 -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 1 -pady 2 -padx 2 -sticky nsew
   grid [ttk::button $w.reset -text "Reset Colvars Module" -command ::cv_dashboard::reset -padding "2 0 2 0"] \
-    -row $gridrow -column 2 -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 2 -pady 2 -padx 2 -sticky nsew
 
   tablelist::tablelist $w.cvtable -columns {
     0 Colvars
@@ -81,21 +97,21 @@ proc ::cv_dashboard::createWindow {} {
 
   incr gridrow
   grid [ttk::button $w.edit -text "Edit \[dbl-click\]" -command ::cv_dashboard::edit -padding "2 0 2 0"] \
-    -row $gridrow -column 0 -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 0 -pady 2 -padx 2 -sticky nsew
   grid [ttk::button $w.add -text "New" -command ::cv_dashboard::add -padding "2 0 2 0"] \
-    -row $gridrow -column 1 -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 1 -pady 2 -padx 2 -sticky nsew
   grid [ttk::button $w.del -text "Delete" -command ::cv_dashboard::del -padding "2 0 2 0"] \
-    -row $gridrow -column 2 -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 2 -pady 2 -padx 2 -sticky nsew
 
   incr gridrow
-  grid [ttk::button $w.plot -text "Interactive plot" -command ::cv_dashboard::plot -padding "2 0 2 0"] -row $gridrow -column 0 -pady 5 -padx 2 -sticky nsew
-  grid [ttk::button $w.refresh -text "Refresh table" -command ::cv_dashboard::refresh_table -padding "2 0 2 0"] -row $gridrow -column 1 -pady 5 -padx 2 -sticky nsew
+  grid [ttk::button $w.plot -text "Interactive plot" -command ::cv_dashboard::plot -padding "2 0 2 0"] -row $gridrow -column 0 -pady 2 -padx 2 -sticky nsew
+  grid [ttk::button $w.refresh -text "Refresh table" -command ::cv_dashboard::refresh_table -padding "2 0 2 0"] -row $gridrow -column 1 -pady 2 -padx 2 -sticky nsew
 
   incr gridrow
-  grid [label $w.frameTxt -text "Frame:"] -row $gridrow -column 0 -pady 5 -padx 2 -sticky nsew
-  grid [label $w.frame -textvariable ::cv_dashboard::current_frame] -row $gridrow -column 1 -pady 5 -padx 2 -sticky nsew
+  grid [label $w.frameTxt -text "Frame:"] -row $gridrow -column 0 -pady 2 -padx 2 -sticky nsew
+  grid [label $w.frame -textvariable ::cv_dashboard::current_frame] -row $gridrow -column 1 -pady 2 -padx 2 -sticky nsew
   grid [ttk::checkbutton $w.trackFrame -text "Track" -command ::cv_dashboard::change_track_frame -variable ::cv_dashboard::track_frame] \
-    -row $gridrow -column 2  -pady 5 -padx 2 -sticky nsew
+    -row $gridrow -column 2  -pady 2 -padx 2 -sticky nsew
   change_track_frame ;# activate tracking if necessary
 
   grid columnconfigure $w 0 -weight 1
@@ -306,36 +322,57 @@ colvar {\n  name d\n  distance {\n    group1 { atomNumbers 1 2 }\n    group2 { a
   ttk::button $w.editor.fl.onlinedoc3 -text "Online doc: types of variables (components)" -padding "4 2 4 2"\
     -command [list ::cv_dashboard::invokeBrowser "http://colvars.github.io/colvars-refman-vmd/colvars-refman-vmd.html#sec:cvc"]
 
-  grid $w.editor.fl.onlinedoc1 -row $gridrow -column 0 -columnspan 3 -pady 10
+  grid $w.editor.fl.onlinedoc1 -row $gridrow -column 0 -columnspan 3 -pady 5
   incr gridrow
-  grid $w.editor.fl.onlinedoc2 -row $gridrow -column 0 -columnspan 3 -pady 10
+  grid $w.editor.fl.onlinedoc2 -row $gridrow -column 0 -columnspan 3 -pady 5
   incr gridrow
-  grid $w.editor.fl.onlinedoc3 -row $gridrow -column 0 -columnspan 3 -pady 10
+  grid $w.editor.fl.onlinedoc3 -row $gridrow -column 0 -columnspan 3 -pady 5
   incr gridrow
+
 
   tk::label $w.editor.fl.seltext_label -text "Selection text:"
   tk::entry $w.editor.fl.seltext -bg white
   # Bind Return key in seltext entry to proc creating the atomNumbers line
-  bind $w.editor.fl.seltext <Return> ::cv_dashboard::atoms_from_sel
+  bind $w.editor.fl.seltext <Return> "::cv_dashboard::atoms_from_sel textbox"
   ttk::button $w.editor.fl.fromsel -text "Insert atoms \[Enter\]" \
-    -command ::cv_dashboard::atoms_from_sel -padding "2 0 2 0"
+    -command "::cv_dashboard::atoms_from_sel textbox" -padding "2 0 2 0"
 
-  grid $w.editor.fl.seltext_label -row $gridrow -column 0 -pady 5 -padx 2
-  grid $w.editor.fl.seltext -row $gridrow -column 1 -sticky ew -pady 5 -padx 2
-  grid $w.editor.fl.fromsel -row $gridrow -column 2 -pady 5 -padx 2
+  grid $w.editor.fl.seltext_label -row $gridrow -column 0 -pady 2 -padx 2
+  grid $w.editor.fl.seltext -row $gridrow -column 1 -sticky ew -pady 2 -padx 2
+  grid $w.editor.fl.fromsel -row $gridrow -column 2 -pady 2 -padx 2
   incr gridrow
+
+
+  # Double click or Enter to insert
+  ttk::button $w.editor.fl.refresh_reps -text "Refresh list" -command ::cv_dashboard::refresh_reps
+  tk::listbox $w.editor.fl.reps -selectmode browse
+  bind $w.editor.fl.reps <Return> "::cv_dashboard::atoms_from_sel reps"
+  bind $w.editor.fl.reps <Double-1> "::cv_dashboard::atoms_from_sel reps"
+
+  grid $w.editor.fl.refresh_reps -row $gridrow -column 0 -pady 2 -padx 2
+  grid $w.editor.fl.reps -row $gridrow -column 1 -columnspan 2 -pady 2 -padx 2 -sticky nsew
+  incr gridrow
+
+  # Populate initial list of selection texts from reps
+  refresh_reps
 
   ttk::radiobutton $w.editor.fl.files1 -variable ::cv_dashboard::filetype -text "atomsFile" -value "atomsFile"
   ttk::radiobutton $w.editor.fl.files2 -variable ::cv_dashboard::filetype -text "refPositionsFile" -value "refPositionsFile"
   ttk::button $w.editor.fl.insert_file -text "Pick file" \
     -command [list ::cv_dashboard::insert_filename] -padding "2 0 2 0"
 
-  grid $w.editor.fl.files1 -row $gridrow -column 0 -pady 5 -padx 2
-  grid $w.editor.fl.files2 -row $gridrow -column 1 -pady 5 -padx 2
-  grid $w.editor.fl.insert_file -row $gridrow -column 2 -pady 5 -padx 2
+  grid $w.editor.fl.files1 -row $gridrow -column 0 -pady 2 -padx 2
+  grid $w.editor.fl.files2 -row $gridrow -column 1 -pady 2 -padx 2
+  grid $w.editor.fl.insert_file -row $gridrow -column 2 -pady 2 -padx 2
+  incr gridrow
 
 
-  # Roght frame: text widget w scrollbar and Apply/Cancel buttons
+  grid columnconfigure $w.editor.fl 0 -weight 1
+  grid columnconfigure $w.editor.fl 1 -weight 1
+  grid columnconfigure $w.editor.fl 2 -weight 1
+
+
+  # Right frame: text widget w scrollbar and Apply/Cancel buttons
   frame $w.editor.fr
   tk::text $w.editor.fr.text -undo 1 -yscrollcommand [list $w.editor.fr.vsb set] -background white
   ttk::scrollbar $w.editor.fr.vsb -orient vertical -command [list $w.editor.fr.text yview]
@@ -344,13 +381,14 @@ colvar {\n  name d\n  distance {\n    group1 { atomNumbers 1 2 }\n    group2 { a
   grid $w.editor.fr.text -row 0 -columnspan 2 -sticky nsew
   grid $w.editor.fr.vsb -row 0 -column 2 -sticky nsew
 
-  bind $w.editor.fr.text <Control-s> ::cv_dashboard::edit_apply
+  # Ctrl-s anywhere in the window saves/applies
+  bind $w.editor <Control-s> ::cv_dashboard::edit_apply
 
   set gridrow 1
   ttk::button $w.editor.fr.apply -text "Apply \[Ctrl-s\]" -command ::cv_dashboard::edit_apply -padding "2 0 2 0"
   ttk::button $w.editor.fr.cancel -text "Cancel" -command ::cv_dashboard::edit_cancel -padding "2 0 2 0"
-  grid $w.editor.fr.apply -row $gridrow -column 0 -sticky e -pady 5 -padx 2
-  grid $w.editor.fr.cancel -row $gridrow -column 1 -sticky w -pady 5 -padx 2
+  grid $w.editor.fr.apply -row $gridrow -column 0 -sticky e -pady 2 -padx 2
+  grid $w.editor.fr.cancel -row $gridrow -column 1 -sticky w -pady 2 -padx 2
 
   grid columnconfigure $w.editor.fr 0 -weight 1
   grid columnconfigure $w.editor.fr 1 -weight 1
@@ -386,10 +424,16 @@ proc ::cv_dashboard::invokeBrowser {url} {
 
 
 # Insert atomNumbers command for given selection text
-proc ::cv_dashboard::atoms_from_sel {} {
+proc ::cv_dashboard::atoms_from_sel { source } {
   set w .cv_dashboard_window
 
-  set seltext [$w.editor.fl.seltext get]
+  # Called from textbox
+  if { $source == "textbox" } {
+    set seltext [$w.editor.fl.seltext get]
+  } elseif { $source == "reps" } {
+    set seltext [$w.editor.fl.reps get active]
+  }
+
   if {[llength $seltext] == 0 } {
     return
   }
@@ -431,6 +475,9 @@ proc ::cv_dashboard::edit_apply {} {
     if { [string compare $res ""] } {
       # error: restore backed up cfg
       run_cv config $::cv_dashboard::backup_cfg
+      refresh_table
+      # Do not destroy editor window (give user a chance to fix input)
+      return
     }
   }
   set ::cv_dashboard::being_edited {}
@@ -446,6 +493,16 @@ proc ::cv_dashboard::edit_cancel {} {
   destroy $w.editor
 }
 
+proc ::cv_dashboard::refresh_reps {} {
+  set w .cv_dashboard_window
+  set numreps [molinfo top get numreps]
+  set reps [list]
+  for {set i 0} {$i < $numreps} {incr i} {
+    lappend reps [lindex [molinfo top get [list [list selection $i]]] 0]
+  }
+  $w.editor.fl.reps delete 0 end
+  $w.editor.fl.reps insert 0 {*}$reps
+}
 
 #################################################################
 # Interactive plot window
@@ -667,12 +724,3 @@ proc ::cv_dashboard::display_marker { f } {
     }
   }
 }
-
-
-#################################################################
-# Toplevel script
-#################################################################
-
-# If window already exists, destroy it
-catch { destroy .cv_dashboard_window }
-::cv_dashboard::createWindow
